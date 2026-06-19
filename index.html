@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ms" class="h-full overflow-hidden select-none touch-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MathPintar - Latihan Matematik Bentuk Lazim</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Playfont&family=Share+Tech+Mono&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f0fdf4;
+            -webkit-text-size-adjust: 100%;
+        }
+        .font-kids {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .math-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .strikethrough {
+            position: relative;
+        }
+        .strikethrough::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 4px;
+            background: #ef4444;
+            transform: rotate(-25deg);
+        }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 h-full w-full flex justify-center items-center p-0 m-0 overflow-hidden bg-slate-100">
+
+    <div id="app" class="w-full max-w-md h-full bg-white shadow-xl flex flex-col justify-between relative overflow-hidden" v-cloak>
+        
+        <header class="bg-emerald-500 text-white p-4 flex justify-between items-center shadow-md rounded-b-2xl shrink-0">
+            <h1 @click="goToMenu" class="text-2xl font-bold tracking-wide font-kids cursor-pointer select-none">✏️ MathPintar</h1>
+            <div v-if="currentParent || currentUser" class="flex items-center gap-2">
+                <button v-if="screen === 'menu'" @click="openReports" class="bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1">📊 Rekod</button>
+                <span v-if="currentUser" class="text-sm font-bold bg-emerald-600 px-3 py-1 rounded-full text-yellow-200 max-w-[100px] truncate">👤 {{ currentUser }}</span>
+                <span v-else-if="currentParent" class="text-sm font-bold bg-purple-600 px-3 py-1 rounded-full text-white max-w-[120px] truncate">👨‍👩‍👦 Ibu Bapa</span>
+                <button @click="logout" class="bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg text-xs font-bold transition-all transform active:scale-95">Keluar</button>
+            </div>
+        </header>
+
+        <main class="flex-grow p-4 flex flex-col justify-start items-center w-full overflow-y-auto touch-pan-y">
+
+            <div v-if="screen === 'welcome'" class="w-full space-y-6 text-center my-auto">
+                <div class="bg-emerald-50 p-6 rounded-3xl border-4 border-emerald-400 shadow-inner">
+                    <span class="text-6xl block mb-2">🧠</span>
+                    <h2 class="text-3xl font-black text-emerald-600 font-kids">MathPintar</h2>
+                    <p class="text-sm text-slate-600 mt-1">Jom kuasai Matematik bentuk lazim dengan seronok!</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4 pt-4">
+                    <button @click="screen = 'child-login'; playSound('click');" class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-black text-xl py-4 rounded-2xl shadow-lg border-b-8 border-yellow-600 transition-all uppercase">
+                        👦 Masuk Sebagai Anak (Guna PIN)
+                    </button>
+                    <button @click="screen = 'parent-login'; playSound('click');" class="bg-purple-500 hover:bg-purple-600 text-white font-black text-base py-3 rounded-2xl shadow-lg border-b-8 border-purple-700 transition-all">
+                        🔑 Log Masuk Ibu Bapa (Emel)
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="screen === 'parent-login'" class="w-full space-y-4 my-auto">
+                <h2 class="text-2xl font-black text-purple-600 font-kids text-center">👨‍👩‍👦 Log Masuk / Daftar Ibu Bapa</h2>
+                <div class="space-y-3">
+                    <label class="block font-bold text-slate-700">Masukkan Emel:</label>
+                    <input type="email" v-model="parentEmailInput" placeholder="contoh@gmail.com" class="w-full p-3 border-2 border-purple-400 rounded-xl focus:outline-none focus:border-purple-600 text-center font-bold">
+                </div>
+                <button @click="loginParent" :disabled="!parentEmailInput.trim()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-black py-3 rounded-xl shadow-md border-b-4 border-purple-700 transition-all disabled:opacity-50">
+                    MASUK KEDASHBOARD
+                </button>
+                <button @click="screen = 'welcome'" class="w-full text-slate-500 text-sm font-bold text-center block hover:underline">Kembali</button>
+            </div>
+
+            <div v-if="screen === 'parent-dashboard'" class="w-full space-y-5">
+                <div class="bg-purple-50 border-2 border-purple-200 p-4 rounded-2xl">
+                    <p class="text-sm font-bold text-slate-700">Akaun: <span class="text-purple-600">{{ currentParent }}</span></p>
+                    <div class="mt-2 flex justify-between items-center bg-white p-2 rounded-xl border border-purple-100">
+                        <div>
+                            <span class="text-xs text-slate-500 font-bold block">🔑 PIN Anak-anak:</span>
+                            <span class="text-xl font-mono font-black tracking-widest text-purple-700">{{ parentData.pin }}</span>
+                        </div>
+                        <button @click="generateNewPin" class="bg-amber-400 hover:bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg border-b-2 border-amber-600">
+                            🔄 Tukar PIN Baru
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-3">
+                    <label class="font-bold text-sm block text-slate-700">➕ Tambah Profil Anak Baru:</label>
+                    <div class="flex gap-2">
+                        <input type="text" v-model="newChildName" placeholder="Nama Anak (cth: Ahmad)" class="flex-grow p-2.5 border border-slate-300 rounded-xl focus:outline-none font-bold text-sm uppercase">
+                        <button @click="addChildProfile" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 rounded-xl text-sm transition-all shadow-sm">
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-black text-slate-700 font-kids text-lg">📊 Prestasi Latihan Anak</h3>
+                    <div v-if="Object.keys(parentData.children).length === 0" class="text-center text-slate-400 text-sm py-6">
+                        Tiada profil anak lagi. Sila tambah profil di atas.
+                    </div>
+                    
+                    <div v-for="(childData, name) in parentData.children" :key="name" class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm space-y-2">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <span class="font-black text-emerald-600 uppercase">👦 {{ name }}</span>
+                            <span class="text-xs text-slate-400 font-bold">{{ childData.reports.length }} Sesi Selesai</span>
+                        </div>
+                        
+                        <div v-if="childData.reports.length > 0" class="text-xs space-y-1 text-slate-600 max-h-[120px] overflow-y-auto bg-slate-50 p-2 rounded-lg">
+                            <div v-for="(rep, idx) in childData.reports" :key="idx" class="flex justify-between">
+                                <span>{{ rep.date }} • {{ rep.operation }} ({{ rep.difficulty }})</span>
+                                <span class="font-bold text-blue-600">{{ rep.score }}/{{ rep.total }} ({{ rep.accuracy }}%)</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-xs text-slate-400 text-center py-2">Anak belum membuat sebarang latihan.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="screen === 'child-login'" class="w-full space-y-4 my-auto text-center">
+                <h2 class="text-2xl font-black text-amber-500 font-kids">👦 Log Masuk Anak</h2>
+                <p class="text-xs text-slate-500">Sila masukkan PIN 4-angka yang diberikan oleh Ibu Bapa.</p>
+                
+                <div class="space-y-3 text-left">
+                    <input type="password" v-model="childPinInput" placeholder="Sila Masukkan PIN" maxLength="4" class="w-full p-4 text-2xl border-4 border-amber-400 rounded-2xl text-center font-mono tracking-widest focus:outline-none">
+                </div>
+
+                <button @click="verifyChildPin" class="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-black text-xl py-4 rounded-2xl shadow-md border-b-4 border-amber-600">
+                    SUNTING / MASUK 🚀
+                </button>
+                
+                <div v-if="foundParentAccount && Object.keys(foundParentAccount.children).length > 0" class="mt-4 p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Nama Anda:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button v-for="(cData, name) in foundParentAccount.children" :key="name" @click="selectChildProfile(name)" class="bg-white hover:bg-emerald-100 border border-emerald-300 p-2 rounded-xl font-bold uppercase text-slate-800 text-sm">
+                            {{ name }}
+                        </button>
+                    </div>
+                </div>
+                <div v-else-if="foundParentAccount" class="text-xs text-red-500 mt-2">Ibu bapa belum menambah nama profil anda di dashboard.</div>
+
+                <button @click="screen = 'welcome'" class="w-full text-slate-500 text-sm font-bold text-center block hover:underline pt-4">Kembali ke Utama</button>
+            </div>
+
+            <div v-if="screen === 'menu'" class="w-full space-y-5 my-auto">
+                <div class="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-2xl">
+                    <p class="text-lg font-bold text-slate-700">Hai, <span class="text-emerald-600 font-black text-xl uppercase">{{ currentUser }}</span>! 👋</p>
+                    <p class="text-xs text-slate-500">Sila pilih tetapan kuiz anda di bawah:</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-slate-700 text-sm block">1. Pilih Operasi:</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button v-for="op in ['Tambah', 'Tolak', 'Darab', 'Bahagi']" :key="op" @click="changeOperation(op)" :class="config.operation === op ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'" class="py-3 px-4 font-bold text-lg rounded-xl border-b-4 transition-all transform active:scale-95">
+                            <span v-if="op==='Tambah'">➕ Tambah</span>
+                            <span v-if="op==='Tolak'">➖ Tolak</span>
+                            <span v-if="op==='Darab'">✖️ Darab</span>
+                            <span v-if="op==='Bahagi'">➗ Bahagi</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-slate-700 text-sm block">2. Bilangan Soalan:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button v-for="num in [10, 20, 50]" :key="num" @click="config.totalQuestions = num; playSound('click');" :class="config.totalQuestions === num ? 'bg-yellow-400 border-yellow-500 font-black text-slate-900' : 'bg-slate-100 border-slate-300 text-slate-700'" class="py-2 text-center font-bold rounded-xl border-b-4 transition-all">
+                            {{ num }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-slate-700 text-sm block">3. Tahap Kesukaran:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button v-for="level in ['Mudah', 'Sederhana', 'Pro']" :key="level" @click="config.difficulty = level; playSound('click');" :class="config.difficulty === level ? 'bg-purple-500 text-white border-purple-600 font-black' : 'bg-slate-100 border-slate-300 text-slate-700'" class="py-2 text-center font-bold rounded-xl border-b-4 transition-all">
+                            {{ level }}
+                        </button>
+                    </div>
+                </div>
+
+                <button @click="startSession" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xl py-4 rounded-2xl shadow-lg border-b-8 border-emerald-700 transition-all transform active:scale-95 active:border-b-2 uppercase tracking-wider">
+                    📝 MULA LATIHAN
+                </button>
+            </div>
+
+            <div v-if="screen === 'gameplay' || screen === 'correction'" class="w-full flex flex-col justify-between items-center space-y-4">
+                
+                <div class="w-full bg-slate-100 p-3 rounded-2xl border-2 border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600">
+                    <div v-if="screen === 'gameplay'">Soalan: <span class="text-emerald-600 text-sm">{{ currentQuestionIndex + 1 }}</span> / {{ config.totalQuestions }}</div>
+                    <div v-else class="text-red-600 text-sm bg-red-50 px-2 py-0.5 rounded-lg border border-red-200 animate-pulse">🛠️ MOD PEMBETULAN (Soalan {{ correctionIndex + 1 }})</div>
+                    
+                    <div v-if="screen === 'gameplay'" class="text-center font-mono text-sm bg-slate-800 text-yellow-400 px-3 py-1 rounded-full shadow-inner">⏱️ {{ formattedTime }}</div>
+                    
+                    <div v-if="screen === 'gameplay'">Skor: <span class="text-blue-600 text-sm">{{ score }}</span> ({{ currentAccuracy }}%)</div>
+                    <button v-else @click="exitCorrection" class="bg-slate-700 text-white px-2.5 py-1 rounded-md text-[11px]">Batal</button>
+                </div>
+
+                <div class="w-full flex-grow bg-amber-50 p-6 rounded-3xl border-4 border-amber-200 shadow-inner min-h-[300px] flex justify-center items-center relative math-font">
+                    
+                    <div v-if="config.operation === 'Tambah' || config.operation === 'Darab'" class="flex items-center justify-center relative">
+                        <div class="absolute left-[-45px] text-4xl font-bold text-slate-600 bottom-[85px]">
+                            {{ config.operation === 'Tambah' ? '+' : '×' }}
+                        </div>
+
+                        <div class="flex">
+                            <div v-for="colIdx in maxColumns" :key="'col-'+colIdx" class="flex flex-col items-center w-14 mx-0.5">
+                                <div class="w-12 h-10 flex items-center justify-center mb-1">
+                                    <input type="text" readonly 
+                                           :value="carryArray[maxColumns - colIdx] || ''" 
+                                           @click="activeTarget = {type: 'carry', index: maxColumns - colIdx}; playSound('click');" 
+                                           :class="activeTarget.type === 'carry' && activeTarget.index === (maxColumns - colIdx) ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-amber-300 bg-white'" 
+                                           class="w-10 h-9 text-base text-center border-2 border-dashed rounded-lg font-bold text-purple-600 focus:outline-none cursor-pointer">
+                                </div>
+
+                                <div class="w-12 h-12 flex items-center justify-center text-4xl font-black text-slate-800">
+                                    {{ getDigitAt(currentQuestion.num1, maxColumns - colIdx) }}
+                                </div>
+
+                                <div class="w-12 h-12 flex items-center justify-center text-4xl font-black text-slate-800 border-b-4 border-slate-800 pb-1">
+                                    {{ getDigitAt(currentQuestion.num2, maxColumns - colIdx) }}
+                                </div>
+
+                                <div class="w-12 h-14 flex items-center justify-center pt-2">
+                                    <input type="text" readonly 
+                                           :value="answerArray[maxColumns - colIdx] || ''" 
+                                           @click="activeTarget = {type: 'answer', index: maxColumns - colIdx}; playSound('click');" 
+                                           :class="activeTarget.type === 'answer' && activeTarget.index === (maxColumns - colIdx) ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-slate-400 bg-white'" 
+                                           class="w-11 h-12 text-center border-2 rounded-xl text-3xl font-black text-slate-900 focus:outline-none transition-all shadow-sm cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="config.operation === 'Tolak'" class="flex items-center justify-center relative">
+                        <div class="absolute left-[-45px] text-4xl font-bold text-slate-600 bottom-[85px]">-</div>
+
+                        <div class="flex">
+                            <div v-for="colIdx in maxColumns" :key="'col-tolak-'+colIdx" class="flex flex-col items-center w-14 mx-0.5">
+                                <div class="w-12 h-8 flex items-center justify-center mb-1">
+                                    <input v-if="getDigitAt(currentQuestion.num1, maxColumns - colIdx) !== ''"
+                                           type="text" readonly 
+                                           :value="borrowArray[maxColumns - colIdx] || ''" 
+                                           @click="activeTarget = {type: 'borrow', index: maxColumns - colIdx}; playSound('click');" 
+                                           :class="activeTarget.type === 'borrow' && activeTarget.index === (maxColumns - colIdx) ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-red-300 bg-white'" 
+                                           class="w-10 h-8 text-sm text-center border-2 border-dashed rounded-md font-bold text-red-600 focus:outline-none cursor-pointer">
+                                </div>
+
+                                <div class="w-12 h-12 flex items-center justify-center text-4xl font-black text-slate-800 select-none cursor-pointer" @click="triggerBorrow(maxColumns - colIdx)">
+                                    <span :class="{'strikethrough text-slate-400': borrowArray[maxColumns - colIdx] !== undefined && borrowArray[maxColumns - colIdx] !== ''}">
+                                        {{ getDigitAt(currentQuestion.num1, maxColumns - colIdx) }}
+                                    </span>
+                                </div>
+
+                                <div class="w-12 h-12 flex items-center justify-center text-4xl font-black text-slate-800 border-b-4 border-slate-800 pb-1">
+                                    {{ getDigitAt(currentQuestion.num2, maxColumns - colIdx) }}
+                                </div>
+
+                                <div class="w-12 h-14 flex items-center justify-center pt-2">
+                                    <input type="text" readonly 
+                                           :value="answerArray[maxColumns - colIdx] || ''" 
+                                           @click="activeTarget = {type: 'answer', index: maxColumns - colIdx}; playSound('click');" 
+                                           :class="activeTarget.type === 'answer' && activeTarget.index === (maxColumns - colIdx) ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-slate-400 bg-white'" 
+                                           class="w-11 h-12 text-center border-2 rounded-xl text-3xl font-black text-slate-900 focus:outline-none transition-all shadow-sm cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="config.operation === 'Bahagi'" class="flex items-center justify-center font-bold pt-6">
+                        <div class="text-4xl text-slate-700 pr-3 pt-14">{{ currentQuestion.num2 }}</div>
+                        
+                        <div class="border-t-4 border-l-4 border-slate-800 rounded-tl-2xl pl-2 pt-2 flex">
+                            <div v-for="(digit, idx) in String(currentQuestion.num1).split('')" :key="'div-col-'+idx" class="flex flex-col items-center w-16 relative mx-0.5">
+                                
+                                <div class="w-12 h-12 flex items-center justify-center mb-1">
+                                    <input type="text" readonly 
+                                           :value="divisionInputs.quotientArray[idx] !== undefined ? divisionInputs.quotientArray[idx] : ''" 
+                                           @click="activeTarget = {type: 'div_quotient_arr', index: idx}; playSound('click');" 
+                                           :class="activeTarget.type === 'div_quotient_arr' && activeTarget.index === idx ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-slate-400 bg-white'" 
+                                           class="w-11 h-11 text-center border-2 rounded-xl text-2xl font-black text-slate-900 focus:outline-none cursor-pointer">
+                                </div>
+
+                                <div class="w-full border-b-2 border-slate-300 my-1"></div>
+
+                                <div class="w-full h-14 flex items-center justify-start relative pl-1">
+                                    <span :class="{'strikethrough text-slate-400': divisionInputs.quotientArray[idx] !== '' && divisionInputs.quotientArray[idx] !== undefined}" 
+                                          class="text-4xl font-black text-slate-800 select-none">
+                                        {{ digit }}
+                                    </span>
+
+                                    <input v-if="idx < String(currentQuestion.num1).length - 1 && divisionInputs.quotientArray[idx] !== '' && divisionInputs.quotientArray[idx] !== undefined" 
+                                           type="text" readonly 
+                                           :value="divisionInputs.remainderArray[idx] !== undefined ? divisionInputs.remainderArray[idx] : ''" 
+                                           @click="activeTarget = {type: 'div_remainder_arr', index: idx}; playSound('click');" 
+                                           :class="activeTarget.type === 'div_remainder_arr' && activeTarget.index === idx ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-blue-400 border-solid bg-white text-blue-600'" 
+                                           class="w-7 h-7 text-xs text-center border-2 rounded absolute right-0 top-1 font-bold focus:outline-none cursor-pointer" placeholder="b">
+                                </div>
+
+                                <div v-if="idx === String(currentQuestion.num1).length - 1 && divisionInputs.quotientArray[idx] !== '' && divisionInputs.quotientArray[idx] !== undefined" class="absolute bottom-[-50px] flex flex-col items-center">
+                                    <span class="text-[9px] text-red-500 font-bold uppercase tracking-tight">Baki Akhir</span>
+                                    <input type="text" readonly 
+                                           :value="divisionInputs.finalRemainder" 
+                                           @click="activeTarget = {type: 'div_final_remainder', index: 0}; playSound('click');" 
+                                           :class="activeTarget.type === 'div_final_remainder' ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-400' : 'border-slate-400 bg-white'" 
+                                           class="w-9 h-8 text-center border-2 rounded-lg text-base font-bold focus:outline-none cursor-pointer">
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <button @click="submitAnswer" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-black text-lg py-3.5 rounded-2xl shadow-md border-b-4 border-blue-700 transition-all transform active:scale-95 active:border-b-0 uppercase">
+                    {{ screen === 'gameplay' ? 'Hantar Jawapan Helaian ➡️' : 'Semak Pembetulan ✔️' }}
+                </button>
+            </div>
+
+            <div v-if="screen === 'results'" class="w-full space-y-5 py-2 my-auto">
+                <div class="bg-gradient-to-b from-yellow-300 to-amber-400 p-5 rounded-3xl shadow-xl border-4 border-white text-slate-900 relative">
+                    <span class="text-5xl block mb-1">🎉</span>
+                    <h2 class="text-2xl font-black uppercase tracking-wide font-kids text-amber-950">Hebat, {{ currentUser }}!</h2>
+                    <p class="font-bold text-amber-900 text-xs">Anda telah menamatkan latihan.</p>
+                </div>
+
+                <div class="bg-white rounded-2xl border-2 border-slate-200 shadow-md p-4 space-y-2 font-bold text-sm text-left">
+                    <div class="flex justify-between border-b pb-1">
+                        <span class="text-slate-500">Gred Betul:</span>
+                        <span class="text-emerald-600 font-black">{{ score }} / {{ config.totalQuestions }}</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-1">
+                        <span class="text-slate-500">Peratusan Skor:</span>
+                        <span class="text-blue-600 font-black">{{ Math.round((score / config.totalQuestions) * 100) }}%</span>
+                    </div>
+                    <div class="flex justify-between pt-0.5">
+                        <span class="text-slate-500">Masa Diambil:</span>
+                        <span class="text-purple-600 font-mono">{{ finalTimeDisplay }}</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2 text-left">
+                    <h3 class="font-bold text-slate-700 text-sm px-1">📝 Senarai Semakan Soalan & Pembetulan:</h3>
+                    <div class="space-y-2 max-h-[220px] overflow-y-auto border border-slate-200 rounded-xl p-2 bg-slate-50">
+                        <div v-for="(q, index) in questions" :key="'rev-'+index" class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center text-sm shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">{{ q.isCorrect ? '✅' : '❌' }}</span>
+                                <div>
+                                    <span class="font-bold text-slate-500 text-xs">S{{ index + 1 }}:</span>
+                                    <span class="font-mono font-bold text-slate-800 ml-1">
+                                        {{ q.num1 }} {{ config.operation === 'Tambah' ? '+' : config.operation === 'Tolak' ? '-' : config.operation === 'Darab' ? '×' : '÷' }} {{ q.num2 }} = {{ q.studentAnsStr }}
+                                    </span>
+                                    <div v-if="!q.isCorrect" class="text-[11px] text-red-500 font-medium">
+                                        Jawapan betul: {{ q.correctAnsStr }}
+                                    </div>
+                                    <div v-else-if="q.wasCorrected" class="text-[11px] text-emerald-600 font-bold flex items-center gap-0.5">
+                                        ✨ Selesai dibetulkan!
+                                    </div>
+                                </div>
+                            </div>
+                            <button v-if="!q.isCorrect" @click="startCorrection(index)" class="bg-red-500 hover:bg-red-600 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg border-b-2 border-red-700 transition-all transform active:scale-95 shrink-0">
+                                🛠️ Betulkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button @click="retrySession" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-black text-base py-3 rounded-xl border-b-4 border-amber-600 transition-transform active:scale-95">🔁 Ulang Lagi</button>
+                    <button @click="goToMenu" class="bg-emerald-500 hover:bg-emerald-600 text-white font-black text-base py-3 rounded-xl border-b-4 border-emerald-700 transition-transform active:scale-95">🏠 Menu Utama</button>
+                </div>
+            </div>
+
+            <div v-if="screen === 'reports'" class="w-full space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-black text-slate-800 font-kids">📊 Laporan Prestasi</h2>
+                    <button @click="goToMenu" class="bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-xl text-sm font-bold transition-all">Kembali</button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 shadow-sm">
+                        <span class="text-xs text-slate-500 block font-bold">Selesai</span>
+                        <span class="text-xl font-black text-emerald-600">{{ reportSummary.totalSessions }}</span>
+                        <span class="text-[10px] text-slate-400 block font-semibold">sesi</span>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-sm">
+                        <span class="text-xs text-slate-500 block font-bold">Purata %</span>
+                        <span class="text-xl font-black text-blue-600">{{ reportSummary.avgAccuracy }}%</span>
+                        <span class="text-[10px] text-slate-400 block font-semibold">skor betul</span>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 shadow-sm">
+                        <span class="text-xs text-slate-500 block font-bold">Purata Masa</span>
+                        <span class="text-sm font-black text-purple-600 block pt-1.5 truncate">{{ reportSummary.avgTime }}</span>
+                        <span class="text-[10px] text-slate-400 block font-semibold">per sesi</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-inner overflow-hidden max-h-[350px] overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-black border-b border-slate-200 uppercase tracking-wider">
+                                <th class="p-3">Operasi / Tahap</th>
+                                <th class="p-3 text-center">Skor</th>
+                                <th class="p-3 text-right">Masa</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                            <tr v-for="(item, idx) in reportList" :key="'rep-'+idx" class="hover:bg-slate-50 transition-colors">
+                                <td class="p-3">
+                                    <div class="font-bold text-slate-900">{{ item.operation }}</div>
+                                    <div class="text-[10px] text-slate-400 font-semibold">{{ item.difficulty }} • {{ item.date }}</div>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <span :class="item.accuracy >= 80 ? 'text-emerald-600 bg-emerald-50' : item.accuracy >= 50 ? 'text-amber-600 bg-amber-50' : 'text-red-500 bg-red-50'" class="px-2 py-0.5 rounded-full font-bold">
+                                        {{ item.score }}/{{ item.total }} ({{ item.accuracy }}%)
+                                    </span>
+                                </td>
+                                <td class="p-3 text-right font-mono text-slate-500">
+                                    {{ item.durationStr }}
+                                </td>
+                            </tr>
+                            <tr v-if="reportList.length === 0">
+                                <td colspan="3" class="p-8 text-center text-slate-400 font-bold">
+                                    📭 Tiada rekod latihan dijumpai lagi.<br>
+                                    <span class="text-[11px] font-normal text-slate-400">Jom mula selesaikan satu kuiz latihan!</span>
